@@ -1,4 +1,4 @@
-# FSRCNN
+# Summary
 
 This repository is an implementation of a CNN for use in image preprocessing to improve OCR accuracy. It borrows code from the GitHub repo ["FSRCNN-pytorch"](https://github.com/yjn870/FSRCNN-pytorch) (coupled with paper ["Accelerating the Super-Resolution Convolutional Neural Network"](https://arxiv.org/abs/1608.00367)).
 
