@@ -4,35 +4,33 @@ This repository is an implementation of a GAN for use in image preprocessing to 
 
 ## Implementation & Model Details
 
-This model implements a GAN with a fixed discriminator network that attempts to improve OCR accuracy through image preprocessing by modifying images before OCR is run on them. The structure of the GAN is as follows:
-- Image is passed through FSRCNN
-- OCR (PyTesseract) is run on output of FSRCNN --- this is the generator network
-- Similarity of OCR output to ground truth text is computed using per-character weighted Levenshtein distance (weighted Levenshtein distance divided by average number of characters across both text) --- this is the discriminator network
-- Generator trains on discriminator output
+This model implements an FSRCNN that attempts to improve OCR accuracy through image preprocessing by modifying images to remove their noise and make them look like the original image. The model uses MSE to calculate the difference between the two images. Weighted Levenshtein distance was originally used to improve OCR, but training yielded poor results as it was too vague a metric to yield useful weight updates. 
 
-Architecturally, the model is implemented as follows:
-- Image is passed through FSRCNN and output along with ground truth is used to train the FSRCNN
-- The loss function on which the CNN trains takes in an image and the ground truth text, runs OCR on the image, and returns the per-character weighted Levenshtein distance between the OCR output and the ground truth
+## Dependencies
 
-## Requirements
-
-- PyTorch
-- Numpy
-- Pillow
-- h5py
+- pytorch
+- numpy
+- pillow
+- pickle
 - tqdm
-- PyTesseract
+- pytesseract
 - weighted_levenshtein
+- cv2
+- glob
 
 ## Datasets
 
-`randomimggen.py` is used to create random images, insert noise into them, and create text files that contain the text in the images.
-`WIP` is used to convert these images and text files into .h5 for use in training.
-To just test the model, run `test.py` (EDIT FOR TESTING)
+`prepare.py` is used to create random images, insert noise into them, and create datasets on which to train and evaluate.
+Use the following command to do so
+```bash
+python prepare.py --train-num 64 --eval-num 32 --train-path dataset/train.pickle --eval-path dataset/eval.pickle
+```
+where ```train-num``` is the number of image-noisy image pairs in the training set and ```eval-num``` is the number of image-noisy image pairs in the evaluation set.
 
 ## Train
 To train, use the following command and specify the train and eval files
 
 ```bash
-python train.py --train-file "your_file" --eval-file "your_file" --outputs-dir "your_folder" --scale 1 --batch-size 32 --num-epochs 10 --seed your_number
+python train.py --train-file "dataset/train.pickle" --eval-file "dataset/eval.pickle" --outputs-dir output --batch-size 4 --num-epochs 4000
 ```
+Note that training takes a lot of time and you will not see noticeable results for tens, hundreds, or thousands of epochs, depending on the size of the image
