@@ -22,7 +22,6 @@ def convert_rgb_to_y(img, dim_order='hwc'):
     else:
         return 16. + (64.738 * img[0] + 129.057 * img[1] + 25.064 * img[2]) / 256.
 
-
 def convert_rgb_to_ycbcr(img, dim_order='hwc'):
     if dim_order == 'hwc':
         y = 16. + (64.738 * img[..., 0] + 129.057 * img[..., 1] + 25.064 * img[..., 2]) / 256.

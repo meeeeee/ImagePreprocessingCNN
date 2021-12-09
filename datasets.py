@@ -1,31 +1,26 @@
-import h5py
 import numpy as np
 from torch.utils.data import Dataset
-
+import pickle
 
 class TrainDataset(Dataset):
-    def __init__(self, h5_file):
+    def __init__(self, pickle_file):
         super(TrainDataset, self).__init__()
-        self.h5_file = h5_file
+        inff = open(pickle_file, "rb")
+        self.file = pickle.load(inff)
+        inff.close()
+        self.len = len(self.file)
 
-    def __getitem__(self, idx):
-        with h5py.File(self.h5_file, 'r') as f:
-            return np.expand_dims(f['lr'][idx] / 255., 0), np.expand_dims(f['hr'][idx] / 255., 0)
+    def __getitem__(self, idx): return (np.expand_dims(self.file[idx][0], 0), self.file[idx][1])
 
-    def __len__(self):
-        with h5py.File(self.h5_file, 'r') as f:
-            return len(f['lr'])
-
+    def __len__(self): return self.len
 
 class EvalDataset(Dataset):
-    def __init__(self, h5_file):
-        super(EvalDataset, self).__init__()
-        self.h5_file = h5_file
+    def __init__(self, pickle_file):
+        inff = open(pickle_file, "rb")
+        self.file = pickle.load(inff)
+        inff.close()
+        self.len = len(self.file)
 
-    def __getitem__(self, idx):
-        with h5py.File(self.h5_file, 'r') as f:
-            return np.expand_dims(f['lr'][str(idx)][:, :] / 255., 0), np.expand_dims(f['hr'][str(idx)][:, :] / 255., 0)
+    def __getitem__(self, idx): return (np.expand_dims(self.file[idx][0][:, :], 0), self.file[idx][1])
 
-    def __len__(self):
-        with h5py.File(self.h5_file, 'r') as f:
-            return len(f['lr'])
+    def __len__(self): return self.len

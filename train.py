@@ -16,20 +16,20 @@ import matplotlib.pyplot as plt
 
 from models import FSRCNN
 from datasets import TrainDataset, EvalDataset
-from utils import AverageMeter, calc_psnr
+from utils import AverageMeter
+import pickle
 
+import PIL
 from PIL import Image as im
 from weighted_levenshtein import lev, osa, dam_lev
 
-pt.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract"
-#python train.py --train-file "dataset/91-image_x4.h5" --eval-file "dataset/Set5_x4.h5" --outputs-dir "output" --scale 4 --batch-size 16 --num-epochs 20 --num-workers 8
+pt.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract" # location of pytesseract --- change as needed
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train-file', type=str, required=True)
     parser.add_argument('--eval-file', type=str, required=True)
     parser.add_argument('--outputs-dir', type=str, required=True)
-    parser.add_argument('--weights-file', type=str)
     parser.add_argument('--scale', type=int, default=2)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--batch-size', type=int, default=16)
@@ -48,17 +48,12 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
 
     model = FSRCNN(scale_factor=args.scale).to(device)
-
-    insc, delc, subc, transc = np.ones(128, dtype=np.float64), np.ones(128, dtype=np.float64), np.ones((128, 128), dtype=np.float64), np.ones((128, 128), dtype=np.float64)
-    epsilon = 1
-    def wLevdist(tensor1, tensor2):
-        str1, str2 = "".join(pt.image_to_string(transforms.ToPILImage()(tensor1).convert("RGB"), config="-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVQXYZ --psm 6").split()), "".join(pt.image_to_string(transforms.ToPILImage()(tensor2).convert("RGB"), config="-c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVQXYZ --psm 6").split())
-        return epsilon*2*dam_lev(str1, str2, insert_costs = insc, delete_costs = delc, substitute_costs = subc, transpose_costs = transc)/max(1, len(str1) + len(str2))
-
-    def loss_fn(output, ground):
-        t = torch.Tensor(torch.sum(torch.Tensor([wLevdist(output[a], ground[a]) for a in range(len(output))]))/len(output))
-        t.requires_grad = True
-        return 1*t
+    def tensor_to_image(tensor):
+        tensor = np.array(tensor, dtype=np.uint8)
+        if np.ndim(tensor)>3:
+            assert tensor.shape[0] == 1
+            tensor = tensor[0]
+        return PIL.Image.fromarray(tensor)
 
     optimizer = optim.Adam([{'params': model.first_part.parameters()}, {'params': model.mid_part.parameters()}, {'params': model.last_part.parameters(), 'lr': args.lr * 0.1}], lr=args.lr)
 
@@ -66,10 +61,7 @@ if __name__ == '__main__':
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
     eval_dataset = EvalDataset(args.eval_file)
     eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=1)
-
-    best_weights = copy.deepcopy(model.state_dict())
-    best_epoch = 0
-    best_loss = math.inf
+    eval_counter = 0
 
     for epoch in range(args.num_epochs):
         model.train()
@@ -78,12 +70,11 @@ if __name__ == '__main__':
             t.set_description('Epoch: {}/{}'.format(epoch, args.num_epochs - 1))
 
             for data in train_dataloader:
-                inputs, labels = data
-
-                inputs = inputs.to(device)
-                labels = labels.to(device)
+                inputs, labels = data[0].to(device), data[1]
                 preds = model(inputs)
-                loss = loss_fn(preds, labels)
+                tensor_to_image(preds[0].detach().numpy().reshape((20, 110))).save("1.jpg")
+                loss_f = nn.MSELoss()
+                loss = loss_f(preds, labels)
                 epoch_losses.update(loss.item(), len(inputs))
 
                 optimizer.zero_grad()
@@ -91,6 +82,12 @@ if __name__ == '__main__':
                 optimizer.step()
 
                 t.set_postfix(loss='{:.6f}'.format(epoch_losses.avg))
-                best_loss = min(best_loss, epoch_losses.avg)
                 t.update(len(inputs))
+
         model.eval()
+
+    for data in eval_dataloader:
+        inputs, labels = data[0].to(device), data[1]
+        with torch.no_grad(): preds = model(inputs).clamp(0.0, 255.0)
+        tensor_to_image(preds[0].reshape((20, 110))).save(args.outputs_dir + str(eval_counter) + ".jpg")
+        eval_counter+=1
