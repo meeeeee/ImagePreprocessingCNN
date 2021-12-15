@@ -72,7 +72,7 @@ if __name__ == '__main__':
             for data in train_dataloader:
                 inputs, labels = data[0].to(device), data[1]
                 preds = model(inputs)
-                tensor_to_image(preds[0].detach().numpy().reshape((20, 110))).save("1.jpg")
+                tensor_to_image(preds[0].detach().numpy().reshape((20, 20))).save("1.jpg")
                 loss_f = nn.MSELoss()
                 loss = loss_f(preds, labels)
                 epoch_losses.update(loss.item(), len(inputs))
@@ -89,5 +89,6 @@ if __name__ == '__main__':
     for data in eval_dataloader:
         inputs, labels = data[0].to(device), data[1]
         with torch.no_grad(): preds = model(inputs).clamp(0.0, 255.0)
-        tensor_to_image(preds[0].reshape((20, 110))).save(args.outputs_dir + str(eval_counter) + ".jpg")
+        tensor_to_image(preds[0].reshape((20, 20))).save(args.outputs_dir + str(eval_counter) + ".jpg")
         eval_counter+=1
+# 0.000370268038*1000*200 \approx 37%
