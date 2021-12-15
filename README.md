@@ -33,4 +33,4 @@ To train, use the following command and specify the train and eval files
 ```bash
 python train.py --train-file dataset/train2_20.pickle --eval-file dataset/eval2_11.pickle --outputs-dir output --batch-size 4 --num-epochs 40000000
 ```
-Note that training takes a lot of time and you will not see noticeable results for tens, hundreds, or thousands of epochs, depending on the size of the image
+Note that training takes a lot of time and you will not see noticeable results for tens, hundreds, or thousands of epochs, depending on the size of the image.
