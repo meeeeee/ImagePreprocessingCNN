@@ -23,7 +23,7 @@ This model implements an FSRCNN that attempts to improve OCR accuracy through im
 `prepare.py` is used to create random images, insert noise into them, and create datasets on which to train and evaluate.
 Use the following command to do so
 ```bash
-python prepare.py --train-num 64 --eval-num 32 --train-path dataset/train.pickle --eval-path dataset/eval.pickle
+python prepare.py --train-num 1048576 --eval-num 2048 --train-path dataset/train2_20.pickle --eval-path dataset/eval2_11.pickle
 ```
 where ```train-num``` is the number of image-noisy image pairs in the training set and ```eval-num``` is the number of image-noisy image pairs in the evaluation set.
 
@@ -31,6 +31,6 @@ where ```train-num``` is the number of image-noisy image pairs in the training s
 To train, use the following command and specify the train and eval files
 
 ```bash
-python train.py --train-file "dataset/train.pickle" --eval-file "dataset/eval.pickle" --outputs-dir output --batch-size 4 --num-epochs 4000
+python train.py --train-file dataset/train2_20.pickle --eval-file dataset/eval2_11.pickle --outputs-dir output --batch-size 4 --num-epochs 40000000
 ```
 Note that training takes a lot of time and you will not see noticeable results for tens, hundreds, or thousands of epochs, depending on the size of the image
